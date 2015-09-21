@@ -9,6 +9,8 @@ from scrapy.utils.project import get_project_settings
 west_test = ['LAX', 'SFO', 'DEN', 'LAS', 'SEA', 'SLC']
 runner = CrawlerRunner(get_project_settings())
 dfs = set()
+f = open('west_prices','wb')
+f.write('')
 for x in xrange(0, len(west_test)):
     for y in xrange(0, len(west_test)):
     	if x==y:
