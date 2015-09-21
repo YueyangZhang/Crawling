@@ -7,7 +7,6 @@
 from items import Flight
 from datetime import datetime as dt
 import sqlite3
-import json
 
 
 class InsertDBPipeline(object):
@@ -33,10 +32,17 @@ class InsertDBPipeline(object):
 
 
 class OutputJsonPipeline(object):
+    minimum_price = 0
 
     def process_item(self, item, spider):
-        filename = 'prices'
-        f = open(filename, 'a')
-        f.write(str(item))
-        f.write('\r\n')
+        self.item = item
+        if self.minimum_price == 0 : 
+            self.minimum_price = int(item['price'])
+        else :
+            self.minimum_price = min(self.minimum_price,int(item['price']))
 
+    def close_spider(self, spider):
+        print('Writing depCity:'+self.item['depCity']+' arrCity:'+self.item['arrCity']+' =='+str(self.minimum_price)+'==')
+        f = open(self.item['filename'], 'a')
+        f.write('x:'+str(self.item['x'])+' y:'+str(self.item['y'])+' price:'+str(self.minimum_price))
+        f.write('\r\n')

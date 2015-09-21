@@ -9,6 +9,9 @@ import scrapy
 
 
 class Flight(scrapy.Item):
+    filename = scrapy.Field()
+    x = scrapy.Field()
+    y = scrapy.Field()
     depCity = scrapy.Field()
     arrCity = scrapy.Field()
     depDate = scrapy.Field()

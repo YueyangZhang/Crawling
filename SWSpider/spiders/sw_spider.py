@@ -12,10 +12,6 @@ class Util(object):
 
     @classmethod
     def parseFlight(_class, string, date):
-        """ General format:
-Departing flight    123(/456)   $0000    12:30AM depart    7:25AM arrive     (Non/1/2)stop    (Change planes in XXX)
-[always]			[flt1/2]    [price]  [departure]       [arrival]   		 [# stops] 		  [connection]
-"""
 
         # Remove keywords from flight string
         removeKeywords = ['Departing flight', 'depart', 'arrive',
@@ -56,7 +52,7 @@ class SWSpider(scrapy.Spider):
     allowed_domains = ["southwest.com"]
     start_urls = ['http://www.southwest.com/flight/search-flight.html']
     cities = ['GSP', 'FNT', 'BOS', 'OAK', 'LIT', 'BOI', 'SAN', 'DCA', 'LBB',
-              'BWI','PIT', 'RIC', 'SAT', 'JAX', 'IAD', 'JAN', 'HRL', 'CHS',
+              'BWI', 'PIT', 'RIC', 'SAT', 'JAX', 'IAD', 'JAN', 'HRL', 'CHS',
               'EYW', 'BNA', 'PHL', 'SNA', 'SFO', 'PHX', 'LAX', 'MAF', 'LAS', 'CRP', 'CMH', 'FLL',
               'DEN', 'DTW', 'BUR', 'ROC', 'GEG', 'BUF', 'GRR', 'BDL', 'DSM', 'EWR',
               'MHT', 'PBI', 'RNO', 'OKC', 'IND', 'ATL', 'ISP', 'SMF', 'BKG', 'PVD',
@@ -65,11 +61,14 @@ class SWSpider(scrapy.Spider):
               'MSP', 'CAK', 'TPA', 'DAL', 'DAY', 'ONT', 'STL', 'ABQ', 'HOU', 'SLC',
               'MCO', 'RSW', 'BHM', 'MCI', 'PNS', 'LGA', 'AMA', 'SDF', 'PWM']
 
-    def __init__(self, depCity='SAN', arrCity='DEN', depDate='09/22/2015'):
+    def __init__(self, depCity='SAN', arrCity='LAS', x =0, y =0 ,filename = 'prices'):
+        print('Spiding depCity:'+depCity+' arrCity:'+arrCity)
         self.depCity = depCity
-        self.depDate = dateParse(depDate)
+        self.depDate = datetime.today() + timedelta(days=1)
         self.arrCity = arrCity
-        pass
+        self.x = x
+        self.y = y
+        self.filename = filename
 
     @classmethod
     def lookupCity(_class, cityCode):
@@ -78,7 +77,7 @@ class SWSpider(scrapy.Spider):
         else:
             raise Exception("Invalid city specified.")
 
-    def buildQuery(self):
+    def buildQuery(self, depCity, arrCity):
         """Build the POST query string for searching flights."""
         queryData = {}
         queryData["transitionalAwardSelected"] = "false"
@@ -87,21 +86,21 @@ class SWSpider(scrapy.Spider):
         queryData["seniorPassengerCount"] = "0"
         queryData["outboundTimeOfDay"] = "ANYTIME"
         queryData["fareType"] = "DOLLARS"
-        queryData["originAirport"] = self.lookupCity(self.depCity)
-        queryData["destinationAirport"] = self.lookupCity(self.arrCity)
+        queryData["originAirport"] = self.lookupCity(depCity)
+        queryData["destinationAirport"] = self.lookupCity(arrCity)
         queryData["outboundDateString"] = self.depDate.strftime("%m/%d/%Y")
         queryData["awardCertificateToggleSelected"] = "false"
         return queryData
 
     def parse(self, response):
-        queryData = self.buildQuery()
+        queryData = self.buildQuery(self.depCity,self.arrCity)
         return [FormRequest.from_response(response, formdata=queryData, formname=self.FORMNAME, callback=self.parseFlights)]
 
     def parseFlights(self, response):
         errors = response.xpath("//ul[@id='errors']/li/text()")
         # Catch errors given by Southwest's page
         if (len(errors) > 0):
-            self.log("Error: %s" % theError, level=log.ERROR)
+            print("Error:"+self.depCity+" "+self.arrCity)
             return
 
         xpath = "//table[@id='faresOutbound']/tbody/tr"
@@ -109,9 +108,12 @@ class SWSpider(scrapy.Spider):
         sels = response.xpath(xpath)
         for sel in sels:
             flight = Flight()
+            flight['filename'] = self.filename
             flight['depCity'] = self.depCity
             flight['arrCity'] = self.arrCity
             flight['depDate'] = self.depDate
+            flight['x'] = self.x
+            flight['y'] = self.y
             priceXpath = "td[contains(@class,'price_column')]//div[@class='product_info']/input/@title"
             for priceString in sel.xpath(priceXpath).extract():
                 if (priceString[0] == 'D'):
