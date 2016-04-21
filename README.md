@@ -1,2 +1,2 @@
 # Crawling
-Crawling part of travel planner writed in python.
+Crawling part of travel planner(python).
