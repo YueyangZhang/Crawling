@@ -18,7 +18,6 @@ for x in xrange(0, len(west_test)):
         d = runner.crawl(
             'sw_spider', depCity=west_test[x], arrCity=west_test[y], x=x, y=y, filename='west_prices')
         dfs.add(d)
-
 defer.DeferredList(dfs).addBoth(lambda _: reactor.stop())
 # the script will block here until all crawling jobs are finished
 reactor.run()
